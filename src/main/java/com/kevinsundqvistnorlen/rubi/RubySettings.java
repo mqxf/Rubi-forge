@@ -17,7 +17,10 @@ public final class RubySettings {
     public static volatile float TEXT_SCALE = DEFAULT_TEXT_SCALE;
     public static volatile float RUBY_SCALE = DEFAULT_RUBY_SCALE;
     public static volatile float RUBY_OVERLAP = DEFAULT_RUBY_OVERLAP;
-    public static volatile float Y_OFFSET = DEFAULT_Y_OFFSET;
+    // Vertical shift applied to lines that have at least one unknown ruby annotation to render.
+    public static volatile float Y_OFFSET_FURIGANA = DEFAULT_Y_OFFSET;
+    // Vertical shift applied to lines that render no furigana (no annotations, or all known).
+    public static volatile float Y_OFFSET_PLAIN = DEFAULT_Y_OFFSET;
 
     private static final ResourceLocation SETTINGS_FILE =
         new ResourceLocation(Rubi.MODID, "ruby_settings.json");
@@ -26,7 +29,8 @@ public final class RubySettings {
         float textScale = DEFAULT_TEXT_SCALE;
         float rubyScale = DEFAULT_RUBY_SCALE;
         float rubyOverlap = DEFAULT_RUBY_OVERLAP;
-        float yOffset = DEFAULT_Y_OFFSET;
+        float yOffsetFurigana = DEFAULT_Y_OFFSET;
+        float yOffsetPlain = DEFAULT_Y_OFFSET;
 
         var resource = manager.getResource(SETTINGS_FILE);
         if (resource.isPresent()) {
@@ -35,7 +39,10 @@ public final class RubySettings {
                 if (json.has("text_scale")) textScale = json.get("text_scale").getAsFloat();
                 if (json.has("ruby_scale")) rubyScale = json.get("ruby_scale").getAsFloat();
                 if (json.has("ruby_overlap")) rubyOverlap = json.get("ruby_overlap").getAsFloat();
-                if (json.has("y_offset")) yOffset = json.get("y_offset").getAsFloat();
+                // Back-compat: legacy "y_offset" seeds the furigana offset.
+                if (json.has("y_offset")) yOffsetFurigana = json.get("y_offset").getAsFloat();
+                if (json.has("y_offset_furigana")) yOffsetFurigana = json.get("y_offset_furigana").getAsFloat();
+                if (json.has("y_offset_plain")) yOffsetPlain = json.get("y_offset_plain").getAsFloat();
             } catch (Exception e) {
                 Utils.LOGGER.warn("Failed to parse {}, reverting to defaults: {}", SETTINGS_FILE, e.toString());
             }
@@ -44,11 +51,12 @@ public final class RubySettings {
         TEXT_SCALE = textScale;
         RUBY_SCALE = rubyScale;
         RUBY_OVERLAP = rubyOverlap;
-        Y_OFFSET = yOffset;
+        Y_OFFSET_FURIGANA = yOffsetFurigana;
+        Y_OFFSET_PLAIN = yOffsetPlain;
 
         Utils.LOGGER.info(
-            "Ruby layout: text_scale={}, ruby_scale={}, ruby_overlap={}, y_offset={}",
-            TEXT_SCALE, RUBY_SCALE, RUBY_OVERLAP, Y_OFFSET
+            "Ruby layout: text_scale={}, ruby_scale={}, ruby_overlap={}, y_offset_furigana={}, y_offset_plain={}",
+            TEXT_SCALE, RUBY_SCALE, RUBY_OVERLAP, Y_OFFSET_FURIGANA, Y_OFFSET_PLAIN
         );
     }
 }

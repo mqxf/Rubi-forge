@@ -1,9 +1,10 @@
 {
     "_comment": "Furigana/ruby layout settings. Resource packs can override this file at assets/rubi/ruby_settings.json to tweak how ruby annotations are laid out. Values reload when resource packs change.",
-    "_fields": "text_scale = base text scale (1.0 = don't shift), ruby_scale = furigana scale relative to base, ruby_overlap = furigana overlap with base (positive = closer/overlaps, negative = gap above base), y_offset = extra vertical shift in pixels for the whole ruby composition (positive = down)",
+    "_fields": "text_scale = base text scale inside ruby annotations (1.0 = no shift), ruby_scale = furigana scale relative to base, ruby_overlap = furigana overlap with base (positive = closer/overlaps, negative = gap above base), y_offset_furigana = extra vertical shift (in pixels) applied to lines that render at least one unknown ruby word (positive = down), y_offset_plain = extra vertical shift applied to lines that render no furigana at all (no annotations, or all known). Legacy key \"y_offset\" is still accepted and seeds y_offset_furigana for backward compatibility.",
 
     "text_scale": 0.9,
     "ruby_scale": 0.6,
     "ruby_overlap": -0.1,
-    "y_offset": 0
+    "y_offset_furigana": 3,
+    "y_offset_plain": 2
 }

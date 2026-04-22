@@ -11,8 +11,8 @@
         {
             "type": "ttf",
             "file": "kleeone:klee.ttf",
-            "size": 18.0,
-            "oversample": 2.0,
+            "size": 15.0,
+            "oversample": 3.0,
             "shift": [0.0, -2.0],
             "skip": []
         }

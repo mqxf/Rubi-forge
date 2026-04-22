@@ -1,6 +1,7 @@
 package com.kevinsundqvistnorlen.rubi.mixin.client;
 
 import com.kevinsundqvistnorlen.rubi.TextDrawer;
+import com.kevinsundqvistnorlen.rubi.option.RubyRenderMode;
 import net.minecraft.client.StringSplitter;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -66,6 +67,9 @@ public abstract class MixinFont {
         CallbackInfoReturnable<Integer> cir
     ) {
         if (this.recursionGuard.get()) return;
+        // OFF mode: skip all custom routing and let vanilla batch-render this call. Safe because
+        // MixinStringDecomposer has also short-circuited in OFF and never emits ruby markers.
+        if (RubyRenderMode.getOption().get() == RubyRenderMode.OFF) return;
         this.recursionGuard.set(true);
 
         try {
@@ -87,6 +91,7 @@ public abstract class MixinFont {
         MultiBufferSource buffer, int packedLightCoords, CallbackInfo ci
     ) {
         if (this.recursionGuard.get()) return;
+        if (RubyRenderMode.getOption().get() == RubyRenderMode.OFF) return;
         this.recursionGuard.set(true);
 
         try {

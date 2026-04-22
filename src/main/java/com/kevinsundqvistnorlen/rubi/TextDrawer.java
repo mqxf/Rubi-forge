@@ -11,11 +11,15 @@ public interface TextDrawer {
         FormattedCharSequence text, float x, float y, Matrix4f matrix, StringSplitter splitter, int fontHeight,
         TextDrawer textDrawer
     ) {
-        // Lines that contain at least one *unknown* ruby word are shifted uniformly so trailing
-        // non-ruby characters stay aligned with the shifted ruby composition. Lines with no
-        // unknown ruby (no ruby at all, or every ruby word is in KnownReadings) render as
-        // pure vanilla — no shift, no scale, no spacing changes.
-        if (RubySettings.Y_OFFSET != 0f) {
+        // Two independent vertical shifts:
+        //   Y_OFFSET_FURIGANA applies when the line has at least one *unknown* ruby word to render.
+        //   Y_OFFSET_PLAIN    applies otherwise (no ruby at all, or every ruby word is known).
+        // If both are equal we can skip the pre-scan entirely.
+        float furiganaOffset = RubySettings.Y_OFFSET_FURIGANA;
+        float plainOffset = RubySettings.Y_OFFSET_PLAIN;
+        if (furiganaOffset == plainOffset) {
+            y += furiganaOffset;
+        } else {
             boolean[] hasUnknownRuby = {false};
             text.accept((i, s, c) -> {
                 var ruby = IRubyStyle.getRuby(s);
@@ -25,7 +29,7 @@ public interface TextDrawer {
                 }
                 return true;
             });
-            if (hasUnknownRuby[0]) y += RubySettings.Y_OFFSET;
+            y += hasUnknownRuby[0] ? furiganaOffset : plainOffset;
         }
 
         final float drawY = y;

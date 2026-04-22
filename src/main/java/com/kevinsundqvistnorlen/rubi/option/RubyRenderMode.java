@@ -9,10 +9,16 @@ import net.minecraft.util.OptionEnum;
 import java.util.Arrays;
 
 public enum RubyRenderMode implements OptionEnum {
+    // Append new values only; ordinals are persisted in options.txt via the Codec.INT xmap below.
     HIDDEN("hidden"),
     ABOVE("above"),
     BELOW("below"),
-    REPLACE("replace");
+    REPLACE("replace"),
+    // OFF is a true-fallback mode: all custom rendering is bypassed and §^word(reading) is stripped
+    // to just `word` via the vanilla decomposer path. HIDDEN, by contrast, still goes through the
+    // custom font pipeline and just renders the base text — use OFF if you suspect rubi is
+    // interfering with a render path and want to A/B test.
+    OFF("off");
 
     private final String key;
 

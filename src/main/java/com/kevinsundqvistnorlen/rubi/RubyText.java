@@ -49,7 +49,11 @@ public record RubyText(
     }
 
     public RubyRenderMode effectiveMode() {
-        return this.isKnown() ? RubyRenderMode.HIDDEN : RubyRenderMode.getOption().get();
+        if (this.isKnown()) return RubyRenderMode.HIDDEN;
+        RubyRenderMode mode = RubyRenderMode.getOption().get();
+        // OFF short-circuits upstream (MixinStringDecomposer) and should never reach here, but if a
+        // cached ruby marker slips through, render as HIDDEN (base text only) rather than crashing.
+        return mode == RubyRenderMode.OFF ? RubyRenderMode.HIDDEN : mode;
     }
 
     float draw(
@@ -62,7 +66,7 @@ public record RubyText(
             case ABOVE -> this.drawAbove(x, y, width, matrix, splitter, fontHeight, textDrawer);
             case BELOW -> this.drawBelow(x, y, width, matrix, splitter, fontHeight, textDrawer);
             case REPLACE -> this.drawReplace(x, y, matrix, textDrawer);
-            case HIDDEN -> this.drawHidden(x, y, matrix, textDrawer);
+            case HIDDEN, OFF -> this.drawHidden(x, y, matrix, textDrawer);
         }
 
         return width;
@@ -82,7 +86,7 @@ public record RubyText(
 
         return switch (mode) {
             case ABOVE, BELOW -> Math.max(baseWidth * RubySettings.TEXT_SCALE, rubyWidth * RubySettings.RUBY_SCALE);
-            case HIDDEN -> baseWidth;
+            case HIDDEN, OFF -> baseWidth;
             case REPLACE -> rubyWidth;
         };
     }

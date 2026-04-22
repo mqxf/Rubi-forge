@@ -1,6 +1,7 @@
 package com.kevinsundqvistnorlen.rubi.mixin.client;
 
 import com.kevinsundqvistnorlen.rubi.IRubyStyle;
+import com.kevinsundqvistnorlen.rubi.option.RubyRenderMode;
 import net.minecraft.client.StringSplitter;
 import net.minecraft.network.chat.FormattedText;
 import net.minecraft.network.chat.Style;
@@ -38,6 +39,7 @@ public abstract class MixinStringSplitter {
 
     @Inject(method = "stringWidth(Ljava/lang/String;)F", at = @At("HEAD"), cancellable = true)
     private void onStringWidthFromString(String text, CallbackInfoReturnable<Float> cir) {
+        if (RubyRenderMode.getOption().get() == RubyRenderMode.OFF) return;
         this.onStringWidthFromSequence(
             (FormattedCharSequence) (sink -> StringDecomposer.iterateFormatted(text, Style.EMPTY, sink)), cir
         );
@@ -48,6 +50,7 @@ public abstract class MixinStringSplitter {
         at = @At("HEAD"), cancellable = true
     )
     private void onStringWidthFromFormattedText(FormattedText text, CallbackInfoReturnable<Float> cir) {
+        if (RubyRenderMode.getOption().get() == RubyRenderMode.OFF) return;
         this.onStringWidthFromSequence(
             (FormattedCharSequence) (sink -> StringDecomposer.iterateFormatted(text, Style.EMPTY, sink)), cir
         );
@@ -59,6 +62,7 @@ public abstract class MixinStringSplitter {
     )
     private void onStringWidthFromSequence(FormattedCharSequence text, CallbackInfoReturnable<Float> cir) {
         if (this.recursionGuard.get()) return;
+        if (RubyRenderMode.getOption().get() == RubyRenderMode.OFF) return;
         this.recursionGuard.set(true);
 
         try {

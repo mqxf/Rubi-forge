@@ -1,7 +1,8 @@
 {
     "options.rubi.renderMode": "Furigana",
-    "options.rubi.renderMode.above": "§^言葉(ことば)の§^上(うえ)",
-    "options.rubi.renderMode.below": "§^Below (Below) Text",
-    "options.rubi.renderMode.replace": "Replace Text",
-    "options.rubi.renderMode.hidden": "Hidden"
+    "options.rubi.renderMode.hidden": "Hidden",
+    "options.rubi.renderMode.above": "Above",
+    "options.rubi.renderMode.below": "Below",
+    "options.rubi.renderMode.replace": "Replace",
+    "options.rubi.renderMode.off": "Off"
 }

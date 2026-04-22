@@ -1,0 +1,8 @@
+{
+    "options.rubi.renderMode": "§^振り仮名(ふりがな)",
+    "options.rubi.renderMode.hidden": "§^非表示(ひひょうじ)",
+    "options.rubi.renderMode.above": "§^上(うえ)",
+    "options.rubi.renderMode.below": "§^下(した)",
+    "options.rubi.renderMode.replace": "§^置(お)き§^換(か)え",
+    "options.rubi.renderMode.off": "オフ"
+}
