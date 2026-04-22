@@ -14,10 +14,6 @@ import java.util.regex.Pattern;
 public record RubyText(FormattedCharSequence text, FormattedCharSequence ruby) {
     public static final Pattern RUBY_PATTERN = Pattern.compile("§\\^\\s*(.+?)\\s*\\(\\s*(.+?)\\s*\\)");
 
-    private static final float RUBY_SCALE = 0.5f;
-    private static final float RUBY_OVERLAP = 0.1f;
-    private static final float TEXT_SCALE = 0.8f;
-
     public static String strip(String returnValue) {
         StringBuilder sb = new StringBuilder(returnValue.length());
 
@@ -46,6 +42,8 @@ public record RubyText(FormattedCharSequence text, FormattedCharSequence ruby) {
         TextDrawer textDrawer
     ) {
         float width = this.getWidth(splitter);
+        // Shift the whole ruby composition (base + furigana) vertically.
+        y += RubySettings.Y_OFFSET;
 
         switch (RubyRenderMode.getOption().get()) {
             case ABOVE -> this.drawAbove(x, y, width, matrix, splitter, fontHeight, textDrawer);
@@ -70,7 +68,7 @@ public record RubyText(FormattedCharSequence text, FormattedCharSequence ruby) {
         }
 
         return switch (mode) {
-            case ABOVE, BELOW -> Math.max(baseWidth * RubyText.TEXT_SCALE, rubyWidth * RubyText.RUBY_SCALE);
+            case ABOVE, BELOW -> Math.max(baseWidth * RubySettings.TEXT_SCALE, rubyWidth * RubySettings.RUBY_SCALE);
             case HIDDEN -> baseWidth;
             case REPLACE -> rubyWidth;
         };
@@ -93,19 +91,19 @@ public record RubyText(FormattedCharSequence text, FormattedCharSequence ruby) {
         float x, float yText, float yRuby, float width, TextDrawer textDrawer,
         StringSplitter splitter, Matrix4f matrix
     ) {
-        textDrawer.drawSpacedApart(this.text(), x, yText, RubyText.TEXT_SCALE, width, matrix, splitter);
-        textDrawer.drawSpacedApart(this.ruby(), x, yRuby, RubyText.RUBY_SCALE, width, matrix, splitter);
+        textDrawer.drawSpacedApart(this.text(), x, yText, RubySettings.TEXT_SCALE, width, matrix, splitter);
+        textDrawer.drawSpacedApart(this.ruby(), x, yRuby, RubySettings.RUBY_SCALE, width, matrix, splitter);
     }
 
     private void drawAbove(
         float x, float y, float width, Matrix4f matrix, StringSplitter splitter, int fontHeight,
         TextDrawer textDrawer
     ) {
-        float textHeight = fontHeight * RubyText.TEXT_SCALE;
-        float rubyHeight = fontHeight * RubyText.RUBY_SCALE;
+        float textHeight = fontHeight * RubySettings.TEXT_SCALE;
+        float rubyHeight = fontHeight * RubySettings.RUBY_SCALE;
 
         float yBody = y + (fontHeight - textHeight);
-        float yAbove = yBody - rubyHeight + fontHeight * RubyText.RUBY_OVERLAP;
+        float yAbove = yBody - rubyHeight + fontHeight * RubySettings.RUBY_OVERLAP;
 
         this.drawRubyPair(x, yBody, yAbove, width, textDrawer, splitter, matrix);
     }
@@ -114,8 +112,8 @@ public record RubyText(FormattedCharSequence text, FormattedCharSequence ruby) {
         float x, float y, float width, Matrix4f matrix, StringSplitter splitter, int fontHeight,
         TextDrawer textDrawer
     ) {
-        float textHeight = fontHeight * RubyText.TEXT_SCALE;
-        float yBelow = y + textHeight - fontHeight * RubyText.RUBY_OVERLAP;
+        float textHeight = fontHeight * RubySettings.TEXT_SCALE;
+        float yBelow = y + textHeight - fontHeight * RubySettings.RUBY_OVERLAP;
 
         this.drawRubyPair(x, y, yBelow, width, textDrawer, splitter, matrix);
     }

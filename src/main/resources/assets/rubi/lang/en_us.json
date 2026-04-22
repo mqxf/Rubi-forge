@@ -1,5 +1,5 @@
 {
-    "options.rubi.renderMode": "Rubies",
+    "options.rubi.renderMode": "Furigana",
     "options.rubi.renderMode.above": "§^言葉(ことば)の§^上(うえ)",
     "options.rubi.renderMode.below": "§^Below (Below) Text",
     "options.rubi.renderMode.replace": "Replace Text",

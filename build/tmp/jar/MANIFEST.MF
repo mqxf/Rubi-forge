@@ -5,6 +5,6 @@ Specification-Version: 1
 Implementation-Title: rubi-forge
 Implementation-Version: 1.1.0
 Implementation-Vendor: keve1227 (original Fabric mod), mqxf (Forge port)
-Implementation-Timestamp: 2026-04-22T06:45:39+0200
+Implementation-Timestamp: 2026-04-22T09:09:14+0200
 MixinConfigs: rubi.mixins.json
 
