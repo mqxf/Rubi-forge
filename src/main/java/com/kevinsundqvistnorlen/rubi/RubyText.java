@@ -42,8 +42,6 @@ public record RubyText(FormattedCharSequence text, FormattedCharSequence ruby) {
         TextDrawer textDrawer
     ) {
         float width = this.getWidth(splitter);
-        // Shift the whole ruby composition (base + furigana) vertically.
-        y += RubySettings.Y_OFFSET;
 
         switch (RubyRenderMode.getOption().get()) {
             case ABOVE -> this.drawAbove(x, y, width, matrix, splitter, fontHeight, textDrawer);
