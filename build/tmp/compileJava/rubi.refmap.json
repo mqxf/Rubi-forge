@@ -1,0 +1,58 @@
+{
+  "mappings": {
+    "com/kevinsundqvistnorlen/rubi/mixin/client/MixinOptions": {
+      "processOptions": "Lnet/minecraft/client/Options;m_168427_(Lnet/minecraft/client/Options$FieldAccess;)V"
+    },
+    "com/kevinsundqvistnorlen/rubi/mixin/client/MixinFont": {
+      "drawInBatch(Ljava/lang/String;FFIZLorg/joml/Matrix4f;Lnet/minecraft/client/renderer/MultiBufferSource;Lnet/minecraft/client/gui/Font$DisplayMode;IIZ)I": "Lnet/minecraft/client/gui/Font;m_272078_(Ljava/lang/String;FFIZLorg/joml/Matrix4f;Lnet/minecraft/client/renderer/MultiBufferSource;Lnet/minecraft/client/gui/Font$DisplayMode;IIZ)I",
+      "drawInBatch8xOutline": "Lnet/minecraft/client/gui/Font;m_168645_(Lnet/minecraft/util/FormattedCharSequence;FFIILorg/joml/Matrix4f;Lnet/minecraft/client/renderer/MultiBufferSource;I)V",
+      "drawInBatch(Lnet/minecraft/util/FormattedCharSequence;FFIZLorg/joml/Matrix4f;Lnet/minecraft/client/renderer/MultiBufferSource;Lnet/minecraft/client/gui/Font$DisplayMode;II)I": "Lnet/minecraft/client/gui/Font;m_272191_(Lnet/minecraft/util/FormattedCharSequence;FFIZLorg/joml/Matrix4f;Lnet/minecraft/client/renderer/MultiBufferSource;Lnet/minecraft/client/gui/Font$DisplayMode;II)I"
+    },
+    "com/kevinsundqvistnorlen/rubi/mixin/client/MixinStringDecomposer": {
+      "iterateFormatted(Ljava/lang/String;ILnet/minecraft/network/chat/Style;Lnet/minecraft/network/chat/Style;Lnet/minecraft/util/FormattedCharSink;)Z": "Lnet/minecraft/util/StringDecomposer;m_14311_(Ljava/lang/String;ILnet/minecraft/network/chat/Style;Lnet/minecraft/network/chat/Style;Lnet/minecraft/util/FormattedCharSink;)Z",
+      "Lnet/minecraft/ChatFormatting;getByCode(C)Lnet/minecraft/ChatFormatting;": "Lnet/minecraft/ChatFormatting;m_126645_(C)Lnet/minecraft/ChatFormatting;"
+    },
+    "com/kevinsundqvistnorlen/rubi/mixin/client/MixinAccessibilityOptionsScreen": {
+      "options": "Lnet/minecraft/client/gui/screens/AccessibilityOptionsScreen;m_232690_(Lnet/minecraft/client/Options;)[Lnet/minecraft/client/OptionInstance;"
+    },
+    "com/kevinsundqvistnorlen/rubi/mixin/client/MixinStyle": {
+      "applyTo": "Lnet/minecraft/network/chat/Style;m_131146_(Lnet/minecraft/network/chat/Style;)Lnet/minecraft/network/chat/Style;",
+      "hashCode": "Lnet/minecraft/network/chat/Style;hashCode()I",
+      "equals": "Lnet/minecraft/network/chat/Style;equals(Ljava/lang/Object;)Z"
+    },
+    "com/kevinsundqvistnorlen/rubi/mixin/client/MixinStringSplitter": {
+      "stringWidth(Lnet/minecraft/util/FormattedCharSequence;)F": "Lnet/minecraft/client/StringSplitter;m_92336_(Lnet/minecraft/util/FormattedCharSequence;)F",
+      "stringWidth(Ljava/lang/String;)F": "Lnet/minecraft/client/StringSplitter;m_92353_(Ljava/lang/String;)F",
+      "stringWidth(Lnet/minecraft/network/chat/FormattedText;)F": "Lnet/minecraft/client/StringSplitter;m_92384_(Lnet/minecraft/network/chat/FormattedText;)F"
+    }
+  },
+  "data": {
+    "searge": {
+      "com/kevinsundqvistnorlen/rubi/mixin/client/MixinOptions": {
+        "processOptions": "Lnet/minecraft/client/Options;m_168427_(Lnet/minecraft/client/Options$FieldAccess;)V"
+      },
+      "com/kevinsundqvistnorlen/rubi/mixin/client/MixinFont": {
+        "drawInBatch(Ljava/lang/String;FFIZLorg/joml/Matrix4f;Lnet/minecraft/client/renderer/MultiBufferSource;Lnet/minecraft/client/gui/Font$DisplayMode;IIZ)I": "Lnet/minecraft/client/gui/Font;m_272078_(Ljava/lang/String;FFIZLorg/joml/Matrix4f;Lnet/minecraft/client/renderer/MultiBufferSource;Lnet/minecraft/client/gui/Font$DisplayMode;IIZ)I",
+        "drawInBatch8xOutline": "Lnet/minecraft/client/gui/Font;m_168645_(Lnet/minecraft/util/FormattedCharSequence;FFIILorg/joml/Matrix4f;Lnet/minecraft/client/renderer/MultiBufferSource;I)V",
+        "drawInBatch(Lnet/minecraft/util/FormattedCharSequence;FFIZLorg/joml/Matrix4f;Lnet/minecraft/client/renderer/MultiBufferSource;Lnet/minecraft/client/gui/Font$DisplayMode;II)I": "Lnet/minecraft/client/gui/Font;m_272191_(Lnet/minecraft/util/FormattedCharSequence;FFIZLorg/joml/Matrix4f;Lnet/minecraft/client/renderer/MultiBufferSource;Lnet/minecraft/client/gui/Font$DisplayMode;II)I"
+      },
+      "com/kevinsundqvistnorlen/rubi/mixin/client/MixinStringDecomposer": {
+        "iterateFormatted(Ljava/lang/String;ILnet/minecraft/network/chat/Style;Lnet/minecraft/network/chat/Style;Lnet/minecraft/util/FormattedCharSink;)Z": "Lnet/minecraft/util/StringDecomposer;m_14311_(Ljava/lang/String;ILnet/minecraft/network/chat/Style;Lnet/minecraft/network/chat/Style;Lnet/minecraft/util/FormattedCharSink;)Z",
+        "Lnet/minecraft/ChatFormatting;getByCode(C)Lnet/minecraft/ChatFormatting;": "Lnet/minecraft/ChatFormatting;m_126645_(C)Lnet/minecraft/ChatFormatting;"
+      },
+      "com/kevinsundqvistnorlen/rubi/mixin/client/MixinAccessibilityOptionsScreen": {
+        "options": "Lnet/minecraft/client/gui/screens/AccessibilityOptionsScreen;m_232690_(Lnet/minecraft/client/Options;)[Lnet/minecraft/client/OptionInstance;"
+      },
+      "com/kevinsundqvistnorlen/rubi/mixin/client/MixinStyle": {
+        "applyTo": "Lnet/minecraft/network/chat/Style;m_131146_(Lnet/minecraft/network/chat/Style;)Lnet/minecraft/network/chat/Style;",
+        "hashCode": "Lnet/minecraft/network/chat/Style;hashCode()I",
+        "equals": "Lnet/minecraft/network/chat/Style;equals(Ljava/lang/Object;)Z"
+      },
+      "com/kevinsundqvistnorlen/rubi/mixin/client/MixinStringSplitter": {
+        "stringWidth(Lnet/minecraft/util/FormattedCharSequence;)F": "Lnet/minecraft/client/StringSplitter;m_92336_(Lnet/minecraft/util/FormattedCharSequence;)F",
+        "stringWidth(Ljava/lang/String;)F": "Lnet/minecraft/client/StringSplitter;m_92353_(Ljava/lang/String;)F",
+        "stringWidth(Lnet/minecraft/network/chat/FormattedText;)F": "Lnet/minecraft/client/StringSplitter;m_92384_(Lnet/minecraft/network/chat/FormattedText;)F"
+      }
+    }
+  }
+}

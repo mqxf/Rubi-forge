@@ -1,0 +1,7 @@
+Java Launcher: /usr/lib/jvm/java-25-openjdk/bin/java
+Arguments: '--inJar, /home/mqxf/Desktop/Coding/Minecraft/rubi-forge/build/fg_cache/net/minecraftforge/forge/1.20.1-47.4.13/forge-1.20.1-47.4.13-injected.jar, --outJar, /home/mqxf/Desktop/Coding/Minecraft/rubi-forge/build/fg_cache/net/minecraftforge/forge/1.20.1-47.4.13_mapped_official_1.20.1/forge-1.20.1-47.4.13_mapped_official_1.20.1.jar, --logFile, accesstransform.log, --atFile, /home/mqxf/Desktop/Coding/Minecraft/rubi-forge/src/main/resources/META-INF/accesstransformer.cfg, --atFile, /home/mqxf/Desktop/Coding/Minecraft/rubi-forge/build/_atJar_4/parent_at.cfg'
+Classpath:
+ - /home/mqxf/.gradle/caches/forge_gradle/maven_downloader/net/minecraftforge/accesstransformers/8.2.14/accesstransformers-8.2.14-fatjar.jar
+Working directory: /home/mqxf/Desktop/Coding/Minecraft/rubi-forge/build/_atJar_4
+Main class: net.minecraftforge.accesstransformer.TransformerProcessor
+====================================
