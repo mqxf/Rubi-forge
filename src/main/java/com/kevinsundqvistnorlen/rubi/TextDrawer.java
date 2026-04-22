@@ -11,14 +11,15 @@ public interface TextDrawer {
         FormattedCharSequence text, float x, float y, Matrix4f matrix, StringSplitter splitter, int fontHeight,
         TextDrawer textDrawer
     ) {
-        // Two independent vertical shifts:
-        //   Y_OFFSET_FURIGANA applies when the line has at least one *unknown* ruby word to render.
-        //   Y_OFFSET_PLAIN    applies otherwise (no ruby at all, or every ruby word is known).
-        // If both are equal we can skip the pre-scan entirely.
+        // Pick the line-level offset amount:
+        //   Y_OFFSET_FURIGANA when the line has at least one *unknown* ruby word to render.
+        //   Y_OFFSET_PLAIN    otherwise (no ruby at all, or every ruby word is known).
+        // If both offsets are equal we skip the pre-scan entirely.
         float furiganaOffset = RubySettings.Y_OFFSET_FURIGANA;
         float plainOffset = RubySettings.Y_OFFSET_PLAIN;
+        float offset;
         if (furiganaOffset == plainOffset) {
-            y += furiganaOffset;
+            offset = furiganaOffset;
         } else {
             boolean[] hasUnknownRuby = {false};
             text.accept((i, s, c) -> {
@@ -29,23 +30,38 @@ public interface TextDrawer {
                 }
                 return true;
             });
-            y += hasUnknownRuby[0] ? furiganaOffset : plainOffset;
+            offset = hasUnknownRuby[0] ? furiganaOffset : plainOffset;
         }
 
-        final float drawY = y;
+        // Per-codepoint Y decision: ASCII-pass-through chars render at the line's original baseline
+        // (so English words embedded in Japanese text don't bob up/down with the Japanese). Everything
+        // else (kana, kanji, the U+FFFC ruby marker, full-width punctuation) gets the shifted Y so the
+        // ruby composition stays aligned with its base text.
+        final float origY = y;
+        final float shiftedY = y + offset;
         var xx = new MutableFloat(x);
         text.accept((index, style, codePoint) -> {
+            final float charY = isAsciiPassThrough(codePoint) ? origY : shiftedY;
             xx.add(IRubyStyle
                 .getRuby(style)
-                .map(rubyText -> rubyText.draw(xx.getValue(), drawY, matrix, splitter, fontHeight, textDrawer))
+                .map(rubyText -> rubyText.draw(xx.getValue(), charY, matrix, splitter, fontHeight, textDrawer))
                 .orElseGet(() -> {
                     var styledChar = FormattedCharSequence.codepoint(codePoint, style);
-                    textDrawer.draw(styledChar, xx.floatValue(), drawY, matrix);
+                    textDrawer.draw(styledChar, xx.floatValue(), charY, matrix);
                     return splitter.stringWidth(styledChar);
                 }));
             return true;
         });
         return xx.getValue();
+    }
+
+    /**
+     * Code points that should ignore the line-level Y shift. All ASCII (U+0000..U+007F) except
+     * `.` and `,` — those two commonly stand in for the Japanese 「。」/「、」 in partially translated
+     * strings and should shift with the Japanese text, not stay anchored like the Latin letters.
+     */
+    private static boolean isAsciiPassThrough(int codePoint) {
+        return codePoint < 0x80 && codePoint != '.' && codePoint != ',';
     }
 
     void draw(FormattedCharSequence text, float x, float y, Matrix4f matrix);
