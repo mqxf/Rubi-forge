@@ -7,6 +7,7 @@ public final class Rubi {
     public static final String MODID = "rubi";
 
     public Rubi() {
-        Utils.LOGGER.info("Rubi (Forge) loaded");
+        KnownReadings.load();
+        Utils.LOGGER.info("Rubi (Forge) loaded; {} known readings.", KnownReadings.totalReadings());
     }
 }

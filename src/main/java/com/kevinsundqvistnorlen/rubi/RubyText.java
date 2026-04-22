@@ -11,19 +11,26 @@ import org.joml.Matrix4f;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
-public record RubyText(FormattedCharSequence text, FormattedCharSequence ruby) {
+public record RubyText(
+    FormattedCharSequence text,
+    FormattedCharSequence ruby,
+    String textPlain,
+    String rubyPlain
+) {
     public static final Pattern RUBY_PATTERN = Pattern.compile("§\\^\\s*(.+?)\\s*\\(\\s*(.+?)\\s*\\)");
 
     public static String strip(String returnValue) {
         StringBuilder sb = new StringBuilder(returnValue.length());
+        boolean replaceMode = RubyRenderMode.getOption().get() == RubyRenderMode.REPLACE;
 
         var matcher = RUBY_PATTERN.matcher(returnValue);
         while (matcher.find()) {
-            if (RubyRenderMode.getOption().get() == RubyRenderMode.REPLACE) {
-                matcher.appendReplacement(sb, matcher.group(2));
-            } else {
-                matcher.appendReplacement(sb, matcher.group(1));
-            }
+            String word = matcher.group(1);
+            String reading = matcher.group(2);
+            // Known words always strip to their base, even in REPLACE mode — the reader doesn't need the
+            // hint, so let it show as the original kanji form.
+            boolean useReading = replaceMode && !KnownReadings.isKnown(word, reading);
+            matcher.appendReplacement(sb, java.util.regex.Matcher.quoteReplacement(useReading ? reading : word));
         }
 
         matcher.appendTail(sb);
@@ -34,7 +41,15 @@ public record RubyText(FormattedCharSequence text, FormattedCharSequence ruby) {
         FormattedCharSequence formattedWord = sink -> StringDecomposer.iterateFormatted(word, 0, style, style, sink);
         FormattedCharSequence formattedRuby = sink -> StringDecomposer.iterateFormatted(ruby, 0, style, style, sink);
         formattedRuby = Utils.transformStyle(formattedRuby, s -> s.withUnderlined(false).withStrikethrough(false));
-        return new RubyText(formattedWord, formattedRuby);
+        return new RubyText(formattedWord, formattedRuby, word, ruby);
+    }
+
+    public boolean isKnown() {
+        return KnownReadings.isKnown(this);
+    }
+
+    public RubyRenderMode effectiveMode() {
+        return this.isKnown() ? RubyRenderMode.HIDDEN : RubyRenderMode.getOption().get();
     }
 
     float draw(
@@ -43,7 +58,7 @@ public record RubyText(FormattedCharSequence text, FormattedCharSequence ruby) {
     ) {
         float width = this.getWidth(splitter);
 
-        switch (RubyRenderMode.getOption().get()) {
+        switch (this.effectiveMode()) {
             case ABOVE -> this.drawAbove(x, y, width, matrix, splitter, fontHeight, textDrawer);
             case BELOW -> this.drawBelow(x, y, width, matrix, splitter, fontHeight, textDrawer);
             case REPLACE -> this.drawReplace(x, y, matrix, textDrawer);
@@ -54,7 +69,7 @@ public record RubyText(FormattedCharSequence text, FormattedCharSequence ruby) {
     }
 
     public float getWidth(StringSplitter splitter) {
-        var mode = RubyRenderMode.getOption().get();
+        var mode = this.effectiveMode();
         float baseWidth = 0f, rubyWidth = 0f;
 
         if (mode != RubyRenderMode.REPLACE) {

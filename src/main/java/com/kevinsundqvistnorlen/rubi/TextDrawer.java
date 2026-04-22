@@ -11,15 +11,21 @@ public interface TextDrawer {
         FormattedCharSequence text, float x, float y, Matrix4f matrix, StringSplitter splitter, int fontHeight,
         TextDrawer textDrawer
     ) {
-        // If the sequence contains any ruby-bearing char, shift the whole line uniformly so trailing
-        // non-ruby characters stay aligned with the shifted ruby composition.
+        // Lines that contain at least one *unknown* ruby word are shifted uniformly so trailing
+        // non-ruby characters stay aligned with the shifted ruby composition. Lines with no
+        // unknown ruby (no ruby at all, or every ruby word is in KnownReadings) render as
+        // pure vanilla — no shift, no scale, no spacing changes.
         if (RubySettings.Y_OFFSET != 0f) {
-            boolean[] hasRuby = {false};
+            boolean[] hasUnknownRuby = {false};
             text.accept((i, s, c) -> {
-                if (IRubyStyle.getRuby(s).isPresent()) { hasRuby[0] = true; return false; }
+                var ruby = IRubyStyle.getRuby(s);
+                if (ruby.isPresent() && !ruby.get().isKnown()) {
+                    hasUnknownRuby[0] = true;
+                    return false;
+                }
                 return true;
             });
-            if (hasRuby[0]) y += RubySettings.Y_OFFSET;
+            if (hasUnknownRuby[0]) y += RubySettings.Y_OFFSET;
         }
 
         final float drawY = y;
