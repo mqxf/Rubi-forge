@@ -30,15 +30,13 @@ public interface TextDrawer {
             ? furiganaOffset
             : (RubyText.hasUnknownRuby(text) ? furiganaOffset : plainOffset);
 
-        // Per-codepoint Y decision: ASCII-pass-through chars render at the line's original baseline
-        // (so English words embedded in Japanese text don't bob up/down with the Japanese). Everything
-        // else (kana, kanji, the U+FFFC ruby marker, full-width punctuation) gets the shifted Y so the
-        // ruby composition stays aligned with its base text.
-        final float origY = y;
-        final float shiftedY = y + offset;
+        // Uniform per-line shift: every glyph on this line draws at the same Y, so ASCII text
+        // (e.g. a trailing "+2" stat) lines up with the Japanese on the same line. Lines with
+        // different offsets (furigana vs plain) still differ from each other, but within any one
+        // line everything sits on the same baseline.
+        final float charY = y + offset;
         var xx = new MutableFloat(x);
         text.accept((index, style, codePoint) -> {
-            final float charY = isAsciiPassThrough(codePoint) ? origY : shiftedY;
             xx.add(IRubyStyle
                 .getRuby(style)
                 .map(rubyText -> rubyText.draw(xx.getValue(), charY, matrix, splitter, fontHeight, textDrawer))
@@ -50,15 +48,6 @@ public interface TextDrawer {
             return true;
         });
         return xx.getValue();
-    }
-
-    /**
-     * Code points that should ignore the line-level Y shift. All ASCII (U+0000..U+007F) except
-     * `.` and `,` — those two commonly stand in for the Japanese 「。」/「、」 in partially translated
-     * strings and should shift with the Japanese text, not stay anchored like the Latin letters.
-     */
-    private static boolean isAsciiPassThrough(int codePoint) {
-        return codePoint < 0x80 && codePoint != '.' && codePoint != ',';
     }
 
     void draw(FormattedCharSequence text, float x, float y, Matrix4f matrix);
