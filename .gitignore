@@ -4,3 +4,4 @@ run/
 build/
 CLAUDE.md
 .claude
+run.sh

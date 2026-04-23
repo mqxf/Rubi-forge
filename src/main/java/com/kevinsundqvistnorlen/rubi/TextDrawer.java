@@ -17,21 +17,9 @@ public interface TextDrawer {
         // If both offsets are equal we skip the pre-scan entirely.
         float furiganaOffset = RubySettings.Y_OFFSET_FURIGANA;
         float plainOffset = RubySettings.Y_OFFSET_PLAIN;
-        float offset;
-        if (furiganaOffset == plainOffset) {
-            offset = furiganaOffset;
-        } else {
-            boolean[] hasUnknownRuby = {false};
-            text.accept((i, s, c) -> {
-                var ruby = IRubyStyle.getRuby(s);
-                if (ruby.isPresent() && !ruby.get().isKnown()) {
-                    hasUnknownRuby[0] = true;
-                    return false;
-                }
-                return true;
-            });
-            offset = hasUnknownRuby[0] ? furiganaOffset : plainOffset;
-        }
+        float offset = furiganaOffset == plainOffset
+            ? furiganaOffset
+            : (RubyText.hasUnknownRuby(text) ? furiganaOffset : plainOffset);
 
         // Per-codepoint Y decision: ASCII-pass-through chars render at the line's original baseline
         // (so English words embedded in Japanese text don't bob up/down with the Japanese). Everything

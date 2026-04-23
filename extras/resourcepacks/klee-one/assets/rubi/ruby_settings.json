@@ -1,9 +1,10 @@
 {
-    "_comment": "Tuned for Klee One SemiBold at size 18 — shrinks the base text slightly and lifts furigana higher to prevent clashing with neighbouring lines.",
+    "_comment": "Tuned for Klee One SemiBold at size 15 — shrinks the base text slightly and lifts furigana higher to prevent clashing with neighbouring lines.",
 
     "text_scale": 0.9,
     "ruby_scale": 0.6,
     "ruby_overlap": -0.16,
-    "y_offset_furigana": 3,
-    "y_offset_plain": 2.25
+    "y_offset_furigana": 7,
+    "y_offset_plain": 2.25,
+    "line_height_bonus": 7
 }

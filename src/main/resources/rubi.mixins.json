@@ -12,7 +12,10 @@
         "MixinStringSplitter",
         "MixinFont",
         "MixinStringDecomposer",
-        "MixinStringWidget"
+        "MixinStringWidget",
+        "MixinGuiGraphics",
+        "MixinMultiLineTextWidget",
+        "MixinClientTextTooltip"
     ],
     "injectors": { "defaultRequire": 1 }
 }

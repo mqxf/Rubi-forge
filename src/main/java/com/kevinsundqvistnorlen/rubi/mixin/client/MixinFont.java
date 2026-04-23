@@ -1,5 +1,7 @@
 package com.kevinsundqvistnorlen.rubi.mixin.client;
 
+import com.kevinsundqvistnorlen.rubi.IRubyFont;
+import com.kevinsundqvistnorlen.rubi.RubySettings;
 import com.kevinsundqvistnorlen.rubi.TextDrawer;
 import com.kevinsundqvistnorlen.rubi.option.RubyRenderMode;
 import net.minecraft.client.StringSplitter;
@@ -12,6 +14,7 @@ import org.joml.Math;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -20,10 +23,18 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(Font.class)
-public abstract class MixinFont {
+public abstract class MixinFont implements IRubyFont {
     @Unique private final ThreadLocal<Boolean> recursionGuard = ThreadLocal.withInitial(() -> false);
+    // Tracks how much of the current lineHeight is our doing, so we can adjust by the delta when
+    // the ruby settings hot-reload instead of stacking the bonus on each reload.
+    @Unique private int rubi$appliedLineHeightBonus = 0;
+    // Snapshot of the font's original lineHeight (the per-glyph vertical metric) captured before
+    // we bump the field. Ruby layout in RubyText uses this as "font height" so the furigana stays
+    // anchored to the actual glyph extent even when lineHeight has been inflated for paragraph
+    // spacing. Initialised lazily in the constructor injector.
+    @Unique private int rubi$baseLineHeight = -1;
 
-    @Final @Shadow public int lineHeight;
+    @Mutable @Final @Shadow public int lineHeight;
     @Final @Shadow private StringSplitter splitter;
 
     @Shadow
@@ -74,7 +85,7 @@ public abstract class MixinFont {
 
         try {
             x = TextDrawer.draw(
-                text, x, y, matrix, this.splitter, this.lineHeight,
+                text, x, y, matrix, this.splitter, this.rubi$baseLineHeight(),
                 (t, xx, yy, m) -> this.drawInBatch(
                     t, xx, yy, color, dropShadow, m, buffer, displayMode, backgroundColor, packedLightCoords
                 )
@@ -83,6 +94,30 @@ public abstract class MixinFont {
         } finally {
             this.recursionGuard.set(false);
         }
+    }
+
+    @Inject(method = "<init>", at = @At("RETURN"))
+    private void rubi$applyInitialLineHeight(CallbackInfo ci) {
+        // Capture the font's declared lineHeight before we apply the bonus. Ruby layout uses this
+        // for its geometric math (scale, overlap, baseline) regardless of how the current lineHeight
+        // has been inflated to make room for paragraph spacing.
+        if (this.rubi$baseLineHeight < 0) this.rubi$baseLineHeight = this.lineHeight;
+        this.rubi$reapplyLineHeightBonus();
+    }
+
+    @Override
+    public void rubi$reapplyLineHeightBonus() {
+        int newBonus = RubySettings.LINE_HEIGHT_BONUS;
+        int delta = newBonus - this.rubi$appliedLineHeightBonus;
+        if (delta != 0) {
+            this.lineHeight += delta;
+            this.rubi$appliedLineHeightBonus = newBonus;
+        }
+    }
+
+    @Override
+    public int rubi$baseLineHeight() {
+        return this.rubi$baseLineHeight >= 0 ? this.rubi$baseLineHeight : this.lineHeight;
     }
 
     @Inject(method = "drawInBatch8xOutline", at = @At("HEAD"), cancellable = true)
@@ -96,7 +131,7 @@ public abstract class MixinFont {
 
         try {
             TextDrawer.draw(
-                text, x, y, matrix, this.splitter, this.lineHeight,
+                text, x, y, matrix, this.splitter, this.rubi$baseLineHeight(),
                 (t, xx, yy, m) -> this.drawInBatch8xOutline(t, xx, yy, color, outlineColor, m, buffer, packedLightCoords)
             );
             ci.cancel();
