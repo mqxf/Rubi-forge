@@ -1,17 +1,22 @@
 package com.kevinsundqvistnorlen.rubi.mixin.client;
 
+import com.kevinsundqvistnorlen.rubi.RubyContext;
 import com.kevinsundqvistnorlen.rubi.RubySettings;
 import com.kevinsundqvistnorlen.rubi.RubyText;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.llamalad7.mixinextras.sugar.ref.LocalIntRef;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
+import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipPositioner;
 import net.minecraft.network.chat.FormattedText;
 import net.minecraft.util.FormattedCharSequence;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+import java.util.List;
 
 /**
  * {@link GuiGraphics#drawWordWrap} advances the per-line Y with {@code pY += 9}, which javac
@@ -45,5 +50,28 @@ public abstract class MixinGuiGraphics {
         if (bonus != 0 && RubyText.hasUnknownRuby(line)) {
             pY.set(pY.get() + bonus);
         }
+    }
+
+    /**
+     * Every tooltip render passes through {@code renderTooltipInternal}. Bracket it with a
+     * push/pop of the dynamic-context flag so TextDrawer can pick the dynamic furigana offset
+     * while the ruby is being laid out inside a tooltip component. The flag is a depth counter,
+     * so nested calls (shouldn't happen in vanilla 1.20.1, but cheap insurance) still pop
+     * correctly.
+     */
+    @Inject(method = "renderTooltipInternal", at = @At("HEAD"))
+    private void rubi$enterDynamicContext(
+        Font font, List<ClientTooltipComponent> components, int x, int y, ClientTooltipPositioner positioner,
+        CallbackInfo ci
+    ) {
+        RubyContext.pushDynamic();
+    }
+
+    @Inject(method = "renderTooltipInternal", at = @At("RETURN"))
+    private void rubi$exitDynamicContext(
+        Font font, List<ClientTooltipComponent> components, int x, int y, ClientTooltipPositioner positioner,
+        CallbackInfo ci
+    ) {
+        RubyContext.popDynamic();
     }
 }

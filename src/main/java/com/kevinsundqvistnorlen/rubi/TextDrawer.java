@@ -15,8 +15,17 @@ public interface TextDrawer {
         //   Y_OFFSET_FURIGANA when the line has at least one *unknown* ruby word to render.
         //   Y_OFFSET_PLAIN    otherwise (no ruby at all, or every ruby word is known).
         // If both offsets are equal we skip the pre-scan entirely.
-        float furiganaOffset = RubySettings.Y_OFFSET_FURIGANA;
-        float plainOffset = RubySettings.Y_OFFSET_PLAIN;
+        // Tooltips and other dynamic-height containers get their own furigana *and* plain offsets,
+        // so lines can sit lower inside the grown box without clipping; fixed-height containers
+        // (buttons, chat lines, creative tab title, …) use the regular offsets so content doesn't
+        // push off the container's top edge.
+        boolean dynamic = RubyContext.isDynamic();
+        float furiganaOffset = dynamic
+            ? RubySettings.Y_OFFSET_FURIGANA_DYNAMIC
+            : RubySettings.Y_OFFSET_FURIGANA;
+        float plainOffset = dynamic
+            ? RubySettings.Y_OFFSET_PLAIN_DYNAMIC
+            : RubySettings.Y_OFFSET_PLAIN;
         float offset = furiganaOffset == plainOffset
             ? furiganaOffset
             : (RubyText.hasUnknownRuby(text) ? furiganaOffset : plainOffset);

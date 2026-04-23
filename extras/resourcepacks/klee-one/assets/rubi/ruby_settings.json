@@ -4,7 +4,9 @@
     "text_scale": 0.9,
     "ruby_scale": 0.6,
     "ruby_overlap": -0.16,
-    "y_offset_furigana": 7,
+    "y_offset_furigana": 3,
+    "y_offset_furigana_dynamic": 7,
     "y_offset_plain": 2.25,
+    "y_offset_plain_dynamic": 3.5,
     "line_height_bonus": 7
 }
