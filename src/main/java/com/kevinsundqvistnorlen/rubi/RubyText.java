@@ -58,12 +58,25 @@ public record RubyText(
     }
 
     /**
-     * True if {@code text} contains at least one ruby-bearing codepoint whose (word, reading) pair
-     * isn't in {@link KnownReadings}. Used by the line-height-bonus mixins to gate the bonus:
-     * if a line renders no furigana (either because it carries no ruby at all, or every ruby on
-     * it is already known) we keep vanilla spacing for that line.
+     * True if {@code text} contains at least one ruby-bearing codepoint that will actually render
+     * as furigana with the current settings. Used by the line-height-bonus mixins and the
+     * TextDrawer pre-scan to gate the extra vertical space.
+     *
+     * <p>Returns {@code false} in two cases where no furigana is visible even if ruby markers are
+     * present:
+     * <ul>
+     *   <li>Global render mode is {@link RubyRenderMode#HIDDEN} — every ruby renders as base-only
+     *       via {@link #drawHidden}.</li>
+     *   <li>Global render mode is {@link RubyRenderMode#OFF} — upstream mixins short-circuit so
+     *       ruby markers are never emitted; defensive check only.</li>
+     * </ul>
+     * Otherwise, returns {@code true} iff some codepoint carries a {@link RubyText} whose
+     * (word, reading) pair is not in {@link KnownReadings}.
      */
     public static boolean hasUnknownRuby(FormattedCharSequence text) {
+        RubyRenderMode mode = RubyRenderMode.getOption().get();
+        if (mode == RubyRenderMode.HIDDEN || mode == RubyRenderMode.OFF) return false;
+
         boolean[] found = {false};
         text.accept((i, s, c) -> {
             var ruby = IRubyStyle.getRuby(s);
