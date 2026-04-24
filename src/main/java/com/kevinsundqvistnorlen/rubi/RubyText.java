@@ -304,20 +304,14 @@ public record RubyText(
 
     private Bounds segmentedBounds(StringSplitter splitter) {
         float advance = 0f;
-        float minLeft = 0f;
-        float maxRight = 0f;
         for (Segment seg : this.segments) {
             float baseW = splitter.stringWidth(this.segmentBaseFcs(seg)) * RubySettings.TEXT_SCALE;
             float rubyW = seg.kanaMatched()
                 ? 0f
                 : splitter.stringWidth(this.segmentRubyFcs(seg)) * RubySettings.RUBY_SCALE;
-            maxRight = Math.max(maxRight, advance + baseW + Math.max(0f, (rubyW - baseW) / 2f));
-            if (rubyW > 0f) {
-                minLeft = Math.min(minLeft, advance + Math.min(0f, (baseW - rubyW) / 2f));
-            }
-            advance += baseW;
+            advance += Math.max(baseW, rubyW);
         }
-        return new Bounds(minLeft, maxRight, maxRight);
+        return new Bounds(0f, advance, advance);
     }
 
     private FormattedCharSequence segmentBaseFcs(Segment seg) {
@@ -373,13 +367,14 @@ public record RubyText(
             FormattedCharSequence rubyFcs = seg.kanaMatched() ? null : this.segmentRubyFcs(seg);
 
             float baseW = splitter.stringWidth(baseFcs) * RubySettings.TEXT_SCALE;
-            textDrawer.drawScaled(baseFcs, xx, yBase, RubySettings.TEXT_SCALE, matrix);
+            float rubyW = rubyFcs == null ? 0f : splitter.stringWidth(rubyFcs) * RubySettings.RUBY_SCALE;
+            float segWidth = Math.max(baseW, rubyW);
+
+            textDrawer.drawSpacedApart(baseFcs, xx, yBase, RubySettings.TEXT_SCALE, segWidth, matrix, splitter);
             if (rubyFcs != null) {
-                float rubyW = splitter.stringWidth(rubyFcs) * RubySettings.RUBY_SCALE;
-                float rubyX = xx + (baseW - rubyW) / 2f;
-                textDrawer.drawScaled(rubyFcs, rubyX, yRuby, RubySettings.RUBY_SCALE, matrix);
+                textDrawer.drawSpacedApart(rubyFcs, xx, yRuby, RubySettings.RUBY_SCALE, segWidth, matrix, splitter);
             }
-            xx += baseW;
+            xx += segWidth;
         }
     }
 
