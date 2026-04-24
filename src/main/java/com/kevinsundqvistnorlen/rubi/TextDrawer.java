@@ -1,9 +1,13 @@
 package com.kevinsundqvistnorlen.rubi;
 
 import net.minecraft.client.StringSplitter;
+import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.util.StringDecomposer;
 import org.apache.commons.lang3.mutable.MutableFloat;
 import org.joml.Matrix4f;
+
+import java.util.Objects;
 
 @FunctionalInterface
 public interface TextDrawer {
@@ -36,17 +40,37 @@ public interface TextDrawer {
         // line everything sits on the same baseline.
         final float charY = y + offset;
         var xx = new MutableFloat(x);
+        StringBuilder plainRun = new StringBuilder();
+        Style[] plainStyle = {null};
+
+        Runnable flushPlainRun = () -> {
+            if (plainRun.isEmpty() || plainStyle[0] == null) return;
+
+            String runText = plainRun.toString();
+            Style runStyle = plainStyle[0];
+            FormattedCharSequence run = sink -> StringDecomposer.iterateFormatted(runText, 0, runStyle, runStyle, sink);
+            textDrawer.draw(run, xx.floatValue(), charY, matrix);
+            xx.add(splitter.stringWidth(run));
+            plainRun.setLength(0);
+            plainStyle[0] = null;
+        };
+
         text.accept((index, style, codePoint) -> {
-            xx.add(IRubyStyle
-                .getRuby(style)
-                .map(rubyText -> rubyText.draw(xx.getValue(), charY, matrix, splitter, fontHeight, textDrawer))
-                .orElseGet(() -> {
-                    var styledChar = FormattedCharSequence.codepoint(codePoint, style);
-                    textDrawer.draw(styledChar, xx.floatValue(), charY, matrix);
-                    return splitter.stringWidth(styledChar);
-                }));
+            var ruby = IRubyStyle.getRuby(style);
+            if (ruby.isPresent()) {
+                flushPlainRun.run();
+                xx.add(ruby.get().draw(xx.getValue(), charY, matrix, splitter, fontHeight, textDrawer));
+                return true;
+            }
+
+            if (!Objects.equals(plainStyle[0], style)) {
+                flushPlainRun.run();
+                plainStyle[0] = style;
+            }
+            plainRun.appendCodePoint(codePoint);
             return true;
         });
+        flushPlainRun.run();
         return xx.getValue();
     }
 
@@ -59,6 +83,11 @@ public interface TextDrawer {
     default void drawSpacedApart(
         FormattedCharSequence text, float x, float y, float scale, float boxWidth, Matrix4f matrix, StringSplitter splitter) {
         float textWidth = splitter.stringWidth(text) * scale;
+        if (textWidth <= 0f) return;
+        if (Math.abs(boxWidth - textWidth) < 0.01f) {
+            this.drawScaled(text, x, y, scale, matrix);
+            return;
+        }
         float emptySpace = boxWidth - textWidth;
 
         var xx = new MutableFloat(x);

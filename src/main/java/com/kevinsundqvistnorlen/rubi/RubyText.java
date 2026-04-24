@@ -21,6 +21,7 @@ public record RubyText(
     Style style,
     List<Segment> segments
 ) {
+    public static final char ESCAPED_RUBY_PREFIX = '\uFFF0';
     public static final Pattern RUBY_PATTERN = Pattern.compile("§\\^\\s*(.+?)\\s*\\(\\s*(.+?)\\s*\\)");
 
     /**
@@ -32,10 +33,11 @@ public record RubyText(
     public record Segment(String base, String reading, boolean kanaMatched) {}
 
     public static String strip(String returnValue) {
-        StringBuilder sb = new StringBuilder(returnValue.length());
+        String normalized = normalizeRubyPrefixes(returnValue);
+        StringBuilder sb = new StringBuilder(normalized.length());
         boolean replaceMode = RubyRenderMode.getOption().get() == RubyRenderMode.REPLACE;
 
-        var matcher = RUBY_PATTERN.matcher(returnValue);
+        var matcher = RUBY_PATTERN.matcher(normalized);
         while (matcher.find()) {
             String word = matcher.group(1);
             String reading = matcher.group(2);
@@ -47,6 +49,54 @@ public record RubyText(
 
         matcher.appendTail(sb);
         return sb.toString();
+    }
+
+    public static String escapeForComponentParsers(String text) {
+        if (text == null || text.isEmpty()) return text;
+        if (text.indexOf('&') < 0 && text.indexOf('\u00A7') < 0) return text;
+
+        StringBuilder sb = null;
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if ((c == '&' || c == '\u00A7') && i + 1 < text.length() && text.charAt(i + 1) == '^') {
+                if (sb == null) {
+                    sb = new StringBuilder(text.length());
+                    sb.append(text, 0, i);
+                }
+                sb.append(ESCAPED_RUBY_PREFIX);
+                i++;
+            } else if (sb != null) {
+                sb.append(c);
+            }
+        }
+        return sb == null ? text : sb.toString();
+    }
+
+    public static String normalizeRubyPrefixes(String text) {
+        if (text == null || text.isEmpty()) return text;
+        if (text.indexOf('&') < 0 && text.indexOf(ESCAPED_RUBY_PREFIX) < 0) return text;
+
+        StringBuilder sb = null;
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (c == ESCAPED_RUBY_PREFIX) {
+                if (sb == null) {
+                    sb = new StringBuilder(text.length() + 8);
+                    sb.append(text, 0, i);
+                }
+                sb.append('\u00A7').append('^');
+            } else if (c == '&' && i + 1 < text.length() && text.charAt(i + 1) == '^') {
+                if (sb == null) {
+                    sb = new StringBuilder(text.length() + 8);
+                    sb.append(text, 0, i);
+                }
+                sb.append('\u00A7').append('^');
+                i++;
+            } else if (sb != null) {
+                sb.append(c);
+            }
+        }
+        return sb == null ? text : sb.toString();
     }
 
     public static @NotNull RubyText fromFormatted(String word, String ruby, Style style) {
@@ -234,15 +284,17 @@ public record RubyText(
     }
 
     private float segmentedWidth(StringSplitter splitter) {
-        float total = 0f;
+        float advance = 0f;
+        float maxRight = 0f;
         for (Segment seg : this.segments) {
             float baseW = splitter.stringWidth(this.segmentBaseFcs(seg)) * RubySettings.TEXT_SCALE;
             float rubyW = seg.kanaMatched()
                 ? 0f
                 : splitter.stringWidth(this.segmentRubyFcs(seg)) * RubySettings.RUBY_SCALE;
-            total += Math.max(baseW, rubyW);
+            maxRight = Math.max(maxRight, advance + baseW + Math.max(0f, (rubyW - baseW) / 2f));
+            advance += baseW;
         }
-        return total;
+        return maxRight;
     }
 
     private FormattedCharSequence segmentBaseFcs(Segment seg) {
@@ -298,14 +350,13 @@ public record RubyText(
             FormattedCharSequence rubyFcs = seg.kanaMatched() ? null : this.segmentRubyFcs(seg);
 
             float baseW = splitter.stringWidth(baseFcs) * RubySettings.TEXT_SCALE;
-            float rubyW = rubyFcs == null ? 0f : splitter.stringWidth(rubyFcs) * RubySettings.RUBY_SCALE;
-            float segWidth = Math.max(baseW, rubyW);
-
-            textDrawer.drawSpacedApart(baseFcs, xx, yBase, RubySettings.TEXT_SCALE, segWidth, matrix, splitter);
+            textDrawer.drawScaled(baseFcs, xx, yBase, RubySettings.TEXT_SCALE, matrix);
             if (rubyFcs != null) {
-                textDrawer.drawSpacedApart(rubyFcs, xx, yRuby, RubySettings.RUBY_SCALE, segWidth, matrix, splitter);
+                float rubyW = splitter.stringWidth(rubyFcs) * RubySettings.RUBY_SCALE;
+                float rubyX = xx + (baseW - rubyW) / 2f;
+                textDrawer.drawScaled(rubyFcs, rubyX, yRuby, RubySettings.RUBY_SCALE, matrix);
             }
-            xx += segWidth;
+            xx += baseW;
         }
     }
 
