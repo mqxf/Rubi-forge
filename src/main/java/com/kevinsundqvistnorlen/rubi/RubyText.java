@@ -90,6 +90,31 @@ public record RubyText(
     }
 
     /**
+     * True if {@code text} contains at least one ruby-bearing codepoint (known or unknown) that
+     * requires custom rendering. Used by {@code MixinFont} to decide whether to take over
+     * Font.drawInBatch on this line — plain lines bail out of our pipeline so ModernUI (or
+     * vanilla) can render them normally.
+     *
+     * <p>Unlike {@link #hasUnknownRuby}, known rubies still count here: HIDDEN mode draws them
+     * via {@link #drawHidden} which substitutes the U+FFFC marker with the base text, and that
+     * substitution still needs our render path. OFF mode returns {@code false} because
+     * {@code MixinStringDecomposer} never emits ruby markers in that mode.
+     */
+    public static boolean hasAnyRuby(FormattedCharSequence text) {
+        if (RubyRenderMode.getOption().get() == RubyRenderMode.OFF) return false;
+
+        boolean[] found = {false};
+        text.accept((i, s, c) -> {
+            if (IRubyStyle.getRuby(s).isPresent()) {
+                found[0] = true;
+                return false;
+            }
+            return true;
+        });
+        return found[0];
+    }
+
+    /**
      * Split a compound annotation at its kana boundaries. For {@code §^飲み物(のみもの)} this returns
      * {@code [(飲, の), (み, match), (物, もの)]} — the kana run in the base is kept as-is with no
      * furigana above it, and each kanji run gets the slice of the reading that lives between

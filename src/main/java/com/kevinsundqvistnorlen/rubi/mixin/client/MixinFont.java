@@ -2,6 +2,7 @@ package com.kevinsundqvistnorlen.rubi.mixin.client;
 
 import com.kevinsundqvistnorlen.rubi.IRubyFont;
 import com.kevinsundqvistnorlen.rubi.RubySettings;
+import com.kevinsundqvistnorlen.rubi.RubyText;
 import com.kevinsundqvistnorlen.rubi.TextDrawer;
 import com.kevinsundqvistnorlen.rubi.option.RubyRenderMode;
 import net.minecraft.client.StringSplitter;
@@ -49,6 +50,20 @@ public abstract class MixinFont implements IRubyFont {
         MultiBufferSource buffer, int packedLightCoords
     );
 
+    // Private vanilla method — ModernUI-textmc @Overwrite's only the public drawInBatch variants,
+    // leaving drawInternal untouched. Routing per-glyph recursion through this instead of back
+    // through drawInBatch bypasses ModernUI entirely, so our ruby Styles don't get stripped by
+    // ModernTextRenderer and widths don't drift. Applies only to ruby-bearing lines (see gate
+    // below); plain text keeps going through vanilla/ModernUI as normal.
+    @Shadow
+    private int drawInternal(
+        FormattedCharSequence text, float x, float y, int color, boolean dropShadow,
+        Matrix4f matrix, MultiBufferSource buffer, Font.DisplayMode displayMode,
+        int backgroundColor, int packedLightCoords
+    ) {
+        throw new AssertionError();
+    }
+
     @Inject(
         method =
             "drawInBatch(Ljava/lang/String;FFIZLorg/joml/Matrix4f;Lnet/minecraft/client/renderer/MultiBufferSource;" +
@@ -81,12 +96,17 @@ public abstract class MixinFont implements IRubyFont {
         // OFF mode: skip all custom routing and let vanilla batch-render this call. Safe because
         // MixinStringDecomposer has also short-circuited in OFF and never emits ruby markers.
         if (RubyRenderMode.getOption().get() == RubyRenderMode.OFF) return;
+        // Only take over for lines that actually carry ruby annotations. Plain text bails out
+        // here so ModernUI (or vanilla) can render it normally — otherwise our per-glyph recursion
+        // would route every label in the game through our custom pipeline, losing ModernUI's
+        // SDF rendering and inheriting its width/baseline quirks.
+        if (!RubyText.hasAnyRuby(text)) return;
         this.recursionGuard.set(true);
 
         try {
             x = TextDrawer.draw(
                 text, x, y, matrix, this.splitter, this.rubi$baseLineHeight(),
-                (t, xx, yy, m) -> this.drawInBatch(
+                (t, xx, yy, m) -> this.drawInternal(
                     t, xx, yy, color, dropShadow, m, buffer, displayMode, backgroundColor, packedLightCoords
                 )
             );
@@ -127,12 +147,20 @@ public abstract class MixinFont implements IRubyFont {
     ) {
         if (this.recursionGuard.get()) return;
         if (RubyRenderMode.getOption().get() == RubyRenderMode.OFF) return;
+        if (!RubyText.hasAnyRuby(text)) return;
         this.recursionGuard.set(true);
 
         try {
+            // Known limitation: ruby-bearing text in 8x-outline contexts (entity name tags,
+            // boss bars, etc.) renders without the outline. ModernUI @Overwrites the public
+            // drawInBatch8xOutline and there's no private helper to tunnel through, so we
+            // fall back to regular (non-outlined) rendering via drawInternal — still
+            // bypassing ModernUI so ruby Styles survive.
             TextDrawer.draw(
                 text, x, y, matrix, this.splitter, this.rubi$baseLineHeight(),
-                (t, xx, yy, m) -> this.drawInBatch8xOutline(t, xx, yy, color, outlineColor, m, buffer, packedLightCoords)
+                (t, xx, yy, m) -> this.drawInternal(
+                    t, xx, yy, color, false, m, buffer, Font.DisplayMode.NORMAL, 0, packedLightCoords
+                )
             );
             ci.cancel();
         } finally {
