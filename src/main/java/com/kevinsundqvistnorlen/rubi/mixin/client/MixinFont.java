@@ -15,7 +15,6 @@ import org.joml.Math;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -26,16 +25,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(Font.class)
 public abstract class MixinFont implements IRubyFont {
     @Unique private final ThreadLocal<Boolean> recursionGuard = ThreadLocal.withInitial(() -> false);
-    // Tracks how much of the current lineHeight is our doing, so we can adjust by the delta when
-    // the ruby settings hot-reload instead of stacking the bonus on each reload.
-    @Unique private int rubi$appliedLineHeightBonus = 0;
-    // Snapshot of the font's original lineHeight (the per-glyph vertical metric) captured before
-    // we bump the field. Ruby layout in RubyText uses this as "font height" so the furigana stays
-    // anchored to the actual glyph extent even when lineHeight has been inflated for paragraph
-    // spacing. Initialised lazily in the constructor injector.
+    // Snapshot of the font's original lineHeight (the per-glyph vertical metric). Ruby layout in
+    // RubyText uses this as "font height" so the furigana stays anchored to the actual glyph
+    // extent even when surrounding widgets reserve extra local spacing for wrapped text.
     @Unique private int rubi$baseLineHeight = -1;
 
-    @Mutable @Final @Shadow public int lineHeight;
+    @Final @Shadow public int lineHeight;
     @Final @Shadow private StringSplitter splitter;
 
     @Shadow
@@ -49,20 +44,6 @@ public abstract class MixinFont implements IRubyFont {
         FormattedCharSequence text, float x, float y, int color, int outlineColor, Matrix4f matrix,
         MultiBufferSource buffer, int packedLightCoords
     );
-
-    // Private vanilla method — ModernUI-textmc @Overwrite's only the public drawInBatch variants,
-    // leaving drawInternal untouched. Routing per-glyph recursion through this instead of back
-    // through drawInBatch bypasses ModernUI entirely, so our ruby Styles don't get stripped by
-    // ModernTextRenderer and widths don't drift. Applies only to ruby-bearing lines (see gate
-    // below); plain text keeps going through vanilla/ModernUI as normal.
-    @Shadow
-    private int drawInternal(
-        FormattedCharSequence text, float x, float y, int color, boolean dropShadow,
-        Matrix4f matrix, MultiBufferSource buffer, Font.DisplayMode displayMode,
-        int backgroundColor, int packedLightCoords
-    ) {
-        throw new AssertionError();
-    }
 
     @Inject(
         method =
@@ -96,17 +77,15 @@ public abstract class MixinFont implements IRubyFont {
         // OFF mode: skip all custom routing and let vanilla batch-render this call. Safe because
         // MixinStringDecomposer has also short-circuited in OFF and never emits ruby markers.
         if (RubyRenderMode.getOption().get() == RubyRenderMode.OFF) return;
-        // Only take over for lines that actually carry ruby annotations. Plain text bails out
-        // here so ModernUI (or vanilla) can render it normally — otherwise our per-glyph recursion
-        // would route every label in the game through our custom pipeline, losing ModernUI's
-        // SDF rendering and inheriting its width/baseline quirks.
+        // Only take over for lines that actually carry ruby annotations. Plain text bails out here
+        // so the active renderer (vanilla, ModernUI, ...) continues to handle it unchanged.
         if (!RubyText.hasAnyRuby(text)) return;
         this.recursionGuard.set(true);
 
         try {
             x = TextDrawer.draw(
                 text, x, y, matrix, this.splitter, this.rubi$baseLineHeight(),
-                (t, xx, yy, m) -> this.drawInternal(
+                (t, xx, yy, m) -> this.drawInBatch(
                     t, xx, yy, color, dropShadow, m, buffer, displayMode, backgroundColor, packedLightCoords
                 )
             );
@@ -118,21 +97,15 @@ public abstract class MixinFont implements IRubyFont {
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void rubi$applyInitialLineHeight(CallbackInfo ci) {
-        // Capture the font's declared lineHeight before we apply the bonus. Ruby layout uses this
-        // for its geometric math (scale, overlap, baseline) regardless of how the current lineHeight
-        // has been inflated to make room for paragraph spacing.
+        // Capture the font's declared lineHeight once. Local line-spacing hooks operate elsewhere,
+        // so this stays the source of truth for ruby geometry.
         if (this.rubi$baseLineHeight < 0) this.rubi$baseLineHeight = this.lineHeight;
-        this.rubi$reapplyLineHeightBonus();
     }
 
     @Override
     public void rubi$reapplyLineHeightBonus() {
-        int newBonus = RubySettings.LINE_HEIGHT_BONUS;
-        int delta = newBonus - this.rubi$appliedLineHeightBonus;
-        if (delta != 0) {
-            this.lineHeight += delta;
-            this.rubi$appliedLineHeightBonus = newBonus;
-        }
+        // Intentionally a no-op. line_height_bonus is consumed by local layout hooks rather than
+        // by mutating Font.lineHeight, which breaks third-party widget renderers such as EditBox.
     }
 
     @Override
@@ -151,15 +124,10 @@ public abstract class MixinFont implements IRubyFont {
         this.recursionGuard.set(true);
 
         try {
-            // Known limitation: ruby-bearing text in 8x-outline contexts (entity name tags,
-            // boss bars, etc.) renders without the outline. ModernUI @Overwrites the public
-            // drawInBatch8xOutline and there's no private helper to tunnel through, so we
-            // fall back to regular (non-outlined) rendering via drawInternal — still
-            // bypassing ModernUI so ruby Styles survive.
             TextDrawer.draw(
                 text, x, y, matrix, this.splitter, this.rubi$baseLineHeight(),
-                (t, xx, yy, m) -> this.drawInternal(
-                    t, xx, yy, color, false, m, buffer, Font.DisplayMode.NORMAL, 0, packedLightCoords
+                (t, xx, yy, m) -> this.drawInBatch8xOutline(
+                    t, xx, yy, color, outlineColor, m, buffer, packedLightCoords
                 )
             );
             ci.cancel();

@@ -34,8 +34,9 @@ public final class RubySettings {
     // Dynamic-container counterpart to Y_OFFSET_PLAIN. Falls back to Y_OFFSET_PLAIN when the JSON
     // doesn't specify it explicitly.
     public static volatile float Y_OFFSET_PLAIN_DYNAMIC = DEFAULT_Y_OFFSET;
-    // Added to Font.lineHeight globally to make room for furigana in wrapped paragraphs. Applied
-    // live on resource reload via IRubyFont.rubi$reapplyLineHeightBonus.
+    // Extra vertical space reserved by the local GUI-layout hooks that render wrapped or stacked
+    // text. This deliberately does not mutate Font.lineHeight globally because custom widgets and
+    // third-party renderers can assume vanilla font metrics.
     public static volatile int LINE_HEIGHT_BONUS = DEFAULT_LINE_HEIGHT_BONUS;
 
     private static final ResourceLocation SETTINGS_FILE =
@@ -82,15 +83,6 @@ public final class RubySettings {
         Y_OFFSET_PLAIN = yOffsetPlain;
         Y_OFFSET_PLAIN_DYNAMIC = yOffsetPlainDynamic != null ? yOffsetPlainDynamic : yOffsetPlain;
         LINE_HEIGHT_BONUS = lineHeightBonus;
-
-        // Font instances are already constructed by the time resources reload, so poke the active
-        // client Fonts to re-apply the (possibly changed) line-height bonus. The IRubyFont mixin
-        // tracks how much of the current lineHeight is our doing so reloads don't accumulate.
-        Minecraft mc = Minecraft.getInstance();
-        if (mc != null) {
-            if (mc.font instanceof IRubyFont f) f.rubi$reapplyLineHeightBonus();
-            if (mc.fontFilterFishy instanceof IRubyFont f) f.rubi$reapplyLineHeightBonus();
-        }
 
         Utils.LOGGER.info(
             "Ruby layout: text_scale={}, ruby_scale={}, ruby_overlap={}, y_offset_furigana={} (dynamic={}), y_offset_plain={} (dynamic={}), line_height_bonus={}",
