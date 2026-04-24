@@ -283,8 +283,28 @@ public record RubyText(
         };
     }
 
+    public Bounds getBounds(StringSplitter splitter) {
+        var mode = this.effectiveMode();
+        return switch (mode) {
+            case ABOVE, BELOW -> this.segmentedBounds(splitter);
+            case HIDDEN, OFF -> {
+                float width = splitter.stringWidth(this.text());
+                yield new Bounds(0f, width, width);
+            }
+            case REPLACE -> {
+                float width = splitter.stringWidth(this.ruby());
+                yield new Bounds(0f, width, width);
+            }
+        };
+    }
+
     private float segmentedWidth(StringSplitter splitter) {
+        return this.segmentedBounds(splitter).advance();
+    }
+
+    private Bounds segmentedBounds(StringSplitter splitter) {
         float advance = 0f;
+        float minLeft = 0f;
         float maxRight = 0f;
         for (Segment seg : this.segments) {
             float baseW = splitter.stringWidth(this.segmentBaseFcs(seg)) * RubySettings.TEXT_SCALE;
@@ -292,9 +312,12 @@ public record RubyText(
                 ? 0f
                 : splitter.stringWidth(this.segmentRubyFcs(seg)) * RubySettings.RUBY_SCALE;
             maxRight = Math.max(maxRight, advance + baseW + Math.max(0f, (rubyW - baseW) / 2f));
+            if (rubyW > 0f) {
+                minLeft = Math.min(minLeft, advance + Math.min(0f, (baseW - rubyW) / 2f));
+            }
             advance += baseW;
         }
-        return maxRight;
+        return new Bounds(minLeft, maxRight, maxRight);
     }
 
     private FormattedCharSequence segmentBaseFcs(Segment seg) {
@@ -366,5 +389,34 @@ public record RubyText(
 
     private void drawHidden(float x, float y, Matrix4f matrix, TextDrawer textDrawer) {
         textDrawer.draw(this.text(), x, y, matrix);
+    }
+
+    public record Bounds(float minX, float maxX, float advance) {
+        public float visualWidth() {
+            return this.maxX - this.minX;
+        }
+    }
+
+    public static float visualWidth(FormattedCharSequence text, StringSplitter splitter) {
+        float[] advance = {0f};
+        float[] minLeft = {0f};
+        float[] maxRight = {0f};
+
+        text.accept((index, style, codePoint) -> {
+            var ruby = IRubyStyle.getRuby(style);
+            if (ruby.isPresent()) {
+                Bounds bounds = ruby.get().getBounds(splitter);
+                minLeft[0] = Math.min(minLeft[0], advance[0] + bounds.minX());
+                maxRight[0] = Math.max(maxRight[0], advance[0] + bounds.maxX());
+                advance[0] += bounds.advance();
+            } else {
+                float width = splitter.stringWidth(FormattedCharSequence.codepoint(codePoint, style));
+                maxRight[0] = Math.max(maxRight[0], advance[0] + width);
+                advance[0] += width;
+            }
+            return true;
+        });
+
+        return maxRight[0] - minLeft[0];
     }
 }

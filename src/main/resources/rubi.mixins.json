@@ -17,7 +17,8 @@
         "MixinGuiGraphics",
         "MixinMultiLineTextWidget",
         "MixinClientTextTooltip",
-        "MixinFTBTextComponentParser"
+        "MixinFTBTextComponentParser",
+        "MixinFTBTextField"
     ],
     "injectors": { "defaultRequire": 1 }
 }
